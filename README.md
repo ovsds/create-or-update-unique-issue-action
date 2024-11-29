@@ -28,13 +28,13 @@ jobs:
 
 ### Action Inputs
 
-| Name                    | Description                                                        | Default               |
-| ----------------------- | ------------------------------------------------------------------ | --------------------- |
-| `token`                 | GITHUB_TOKEN or a repo scoped PAT                                  | `${{ github.token }}` |
-| `title`                 | The title of the issue to create or update                         |                       |
-| `body`                  | The body of the issue to create or update                          |                       |
-| `unique-title-includes` | The unique title to search for in the repository                   |                       |
-| `state`                 | State of the issue: open or closed. Issue is not created if closed | open                  |
+| Name                    | Description                                      | Default               |
+| ----------------------- | ------------------------------------------------ | --------------------- |
+| `token`                 | GITHUB_TOKEN or a repo scoped PAT                | `${{ github.token }}` |
+| `title`                 | The title of the issue to create or update       |                       |
+| `body`                  | The body of the issue to create or update        |                       |
+| `unique-title-includes` | The unique title to search for in the repository |                       |
+| `close`                 | Close the comment or skip creation               | false                 |
 
 ### Action Outputs
 

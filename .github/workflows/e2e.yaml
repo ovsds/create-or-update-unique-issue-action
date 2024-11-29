@@ -110,7 +110,7 @@ jobs:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
           unique-title-includes: ${{ env.issue-title-prefix }}
-          state: "closed"
+          close: "true"
 
       - name: Get Issue Closed
         id: get-issue-closed
@@ -192,7 +192,7 @@ jobs:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
           unique-title-includes: ${{ env.issue-title-prefix }}
-          state: "closed"
+          close: "true"
 
       - name: Find Issue Closed
         id: find-issue-closed
@@ -238,7 +238,7 @@ jobs:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
           unique-title-includes: ${{ env.issue-title-prefix }}
-          state: "closed"
+          close: "true"
 
       - name: Get Issue Closed
         id: get-issue-closed
