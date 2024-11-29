@@ -29,6 +29,7 @@ jobs:
         with:
           actions: "find-issues"
           title-includes: ${{ env.issue-title-prefix }}
+          issue-state: "all"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@v2
@@ -63,6 +64,12 @@ jobs:
           actual: ${{ steps.get-issue-created.outputs.issue-body }}
           expected: "${{ env.issue-body }} - Create"
 
+      - name: Assert issue state
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-created.outputs.issue-state }}
+          expected: "open"
+
       - name: Test Run Update Issue
         id: test-run-update-issue
         uses: ./
@@ -90,6 +97,12 @@ jobs:
           actual: ${{ steps.get-issue-updated.outputs.issue-body }}
           expected: "${{ env.issue-body }} - Update"
 
+      - name: Assert issue state
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-updated.outputs.issue-state }}
+          expected: "open"
+
       - name: Test Run Close Issue
         id: test-run-close-issue
         uses: ./
@@ -99,18 +112,49 @@ jobs:
           unique-title-includes: ${{ env.issue-title-prefix }}
           state: "closed"
 
-      - name: Find Issue Closed
-        id: find-issue-closed
+      - name: Get Issue Closed
+        id: get-issue-closed
         uses: actions-cool/issues-helper@v3
         with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
 
-      - name: Assert issue not found
+      - name: Assert issue title
         uses: nick-fields/assert-action@v2
         with:
-          actual: ${{ steps.find-issue-closed.outputs.issues }}
-          expected: "[]"
+          actual: ${{ steps.get-issue-closed.outputs.issue-title }}
+          expected: "${{ env.issue-title-prefix }} - Close"
+
+      - name: Assert issue body
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-closed.outputs.issue-body }}
+          expected: "${{ env.issue-body }} - Close"
+
+      - name: Assert issue state
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-closed.outputs.issue-state }}
+          expected: "closed"
+
+      - name: Get Issue Close Reason
+        id: get-issue-close-reason
+        shell: bash
+        run: |
+          result=$( \
+            gh api \
+            /repos/${{ github.repository }}/issues/${{ steps.test-run-close-issue.outputs.issue-number }} \
+            | jq -r '.state_reason' \
+          )
+          echo "result=$result" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Assert issue close reason
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-close-reason.outputs.result }}
+          expected: "not_planned"
 
   e2e-close-non-existing:
     runs-on: ubuntu-latest
@@ -133,6 +177,7 @@ jobs:
         with:
           actions: "find-issues"
           title-includes: ${{ env.issue-title-prefix }}
+          issue-state: "all"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@v2
@@ -155,6 +200,7 @@ jobs:
         with:
           actions: "find-issues"
           title-includes: ${{ env.issue-title-prefix }}
+          issue-state: "all"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@v2

@@ -33,6 +33,7 @@ runs:
         token: ${{ inputs.token }}
         actions: "find-issues"
         title-includes: ${{ inputs.unique-title-includes }}
+        issue-state: "all"
 
     - name: Get issue number
       shell: bash
@@ -66,7 +67,25 @@ runs:
         issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
         title: ${{ inputs.title }}
         body: ${{ inputs.body }}
-        state: ${{ inputs.state }}
+
+    - name: Open Issue
+      if: steps.get-issue-number.outputs.issue-number != '' && inputs.state != 'closed'
+      id: open-issue
+      uses: actions-cool/issues-helper@v3
+      with:
+        token: ${{ inputs.token }}
+        actions: "open-issue"
+        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
+
+    - name: Close Issue
+      if: steps.get-issue-number.outputs.issue-number != '' && inputs.state == 'closed'
+      id: close-issue
+      uses: actions-cool/issues-helper@v3
+      with:
+        token: ${{ inputs.token }}
+        actions: "close-issue"
+        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
+        close-reason: "not_planned"
 
     - name: Result
       shell: bash
