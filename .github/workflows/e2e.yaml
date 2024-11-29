@@ -13,30 +13,241 @@ jobs:
 
     permissions:
       contents: read
+      issues: write
+
+    env:
+      issue-title-prefix: "E2E ${{ github.run_number }} - Default"
+      issue-body: "This is a test issue for the E2E Default workflow"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test Run
-        id: test-run
-        uses: ./
+      - name: Find Issue Before
+        id: find-issue-before
+        uses: actions-cool/issues-helper@v3
         with:
-          placeholder: "test_placeholder"
+          actions: "find-issues"
+          title-includes: ${{ env.issue-title-prefix }}
 
-      - name: Assert placeholder
+      - name: Assert issue not found
         uses: nick-fields/assert-action@v2
         with:
-          actual: ${{ steps.test-run.outputs.placeholder }}
-          expected: "test_placeholder"
+          actual: ${{ steps.find-issue-before.outputs.issues }}
+          expected: "[]"
+
+      - name: Test Run Create Issue
+        id: test-run-create-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Create"
+          body: "${{ env.issue-body }} - Create"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Get Issue Created
+        id: get-issue-created
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-create-issue.outputs.issue-number }}
+
+      - name: Assert issue title
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-created.outputs.issue-title }}
+          expected: "${{ env.issue-title-prefix }} - Create"
+
+      - name: Assert issue body
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-created.outputs.issue-body }}
+          expected: "${{ env.issue-body }} - Create"
+
+      - name: Test Run Update Issue
+        id: test-run-update-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Update"
+          body: "${{ env.issue-body }} - Update"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Get Issue Updated
+        id: get-issue-updated
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-update-issue.outputs.issue-number }}
+
+      - name: Assert issue title
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-updated.outputs.issue-title }}
+          expected: "${{ env.issue-title-prefix }} - Update"
+
+      - name: Assert issue body
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-updated.outputs.issue-body }}
+          expected: "${{ env.issue-body }} - Update"
+
+      - name: Test Run Close Issue
+        id: test-run-close-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Close"
+          body: "${{ env.issue-body }} - Close"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+          state: "closed"
+
+      - name: Find Issue Closed
+        id: find-issue-closed
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "find-issues"
+          title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Assert issue not found
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.find-issue-closed.outputs.issues }}
+          expected: "[]"
+
+  e2e-close-non-existing:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+
+    env:
+      issue-title-prefix: "E2E ${{ github.run_number }} - Close Non Existing"
+      issue-body: "This is a test issue for the E2E Close Non Existing workflow"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find Issue Before
+        id: find-issue-before
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "find-issues"
+          title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Assert issue not found
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.find-issue-before.outputs.issues }}
+          expected: "[]"
+
+      - name: Test Run Close Issue
+        id: test-run-close-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Close"
+          body: "${{ env.issue-body }} - Close"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+          state: "closed"
+
+      - name: Find Issue Closed
+        id: find-issue-closed
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "find-issues"
+          title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Assert issue not found
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.find-issue-closed.outputs.issues }}
+          expected: "[]"
+
+  e2e-reopen-closed:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+
+    env:
+      issue-title-prefix: "E2E ${{ github.run_number }} - Reopen Closed"
+      issue-body: "This is a test issue for the E2E Reopen Closed workflow"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test Run Create Issue
+        id: test-run-create-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Create"
+          body: "${{ env.issue-body }} - Create"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Test Run Close Issue
+        id: test-run-close-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Close"
+          body: "${{ env.issue-body }} - Close"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+          state: "closed"
+
+      - name: Get Issue Closed
+        id: get-issue-closed
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+
+      - name: Assert issue closed
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-closed.outputs.issue-state }}
+          expected: "closed"
+
+      - name: Test Run Reopen Issue
+        id: test-run-reopen-issue
+        uses: ./
+        with:
+          title: "${{ env.issue-title-prefix }} - Reopen"
+          body: "${{ env.issue-body }} - Reopen"
+          unique-title-includes: ${{ env.issue-title-prefix }}
+
+      - name: Get Issue Reopened
+        id: get-issue-reopened
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
+
+      - name: Assert issue reopened
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-reopened.outputs.issue-state }}
+          expected: "open"
+
   e2e:
     runs-on: ubuntu-latest
     if: always() && !cancelled()
 
+    permissions:
+      contents: read
+      issues: write
+
     needs:
       - e2e-default
+      - e2e-close-non-existing
+      - e2e-reopen-closed
 
     steps:
+      - name: Close e2e issues
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "close-issues"
+          title-includes: "E2E ${{ github.run_number }}"
+
       - name: Collect Results
         uses: ovsds/collect-needs-result-action@v1
         with:
