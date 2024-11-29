@@ -14,9 +14,9 @@ inputs:
   unique-title-includes:
     description: "The unique title to search for in the repository"
     required: true
-  state:
-    description: "State of the issue: open or closed. Issue is not created if closed"
-    default: "open"
+  close:
+    description: "Close the comment or skip creation"
+    default: "false"
 
 outputs:
   issue-number:
@@ -48,7 +48,7 @@ runs:
         fi
 
     - name: Create Issue
-      if: steps.get-issue-number.outputs.issue-number == '' && inputs.state != 'closed'
+      if: steps.get-issue-number.outputs.issue-number == '' && inputs.close != 'true'
       id: create-issue
       uses: actions-cool/issues-helper@v3
       with:
@@ -68,17 +68,8 @@ runs:
         title: ${{ inputs.title }}
         body: ${{ inputs.body }}
 
-    - name: Open Issue
-      if: steps.get-issue-number.outputs.issue-number != '' && inputs.state != 'closed'
-      id: open-issue
-      uses: actions-cool/issues-helper@v3
-      with:
-        token: ${{ inputs.token }}
-        actions: "open-issue"
-        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
-
     - name: Close Issue
-      if: steps.get-issue-number.outputs.issue-number != '' && inputs.state == 'closed'
+      if: steps.get-issue-number.outputs.issue-number != '' && inputs.close == 'true'
       id: close-issue
       uses: actions-cool/issues-helper@v3
       with:
