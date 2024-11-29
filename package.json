@@ -1,0 +1,27 @@
+{
+  "private": true,
+  "name": "create-or-update-unique-issue-action",
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.3",
+    "@commitlint/config-conventional": "^19.0.3",
+    "husky": "^9.1.1",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1"
+  },
+  "hooks": {
+    "pre-commit": "lint-staged",
+    "commit-msg": "commitlint"
+  },
+  "lint-staged": {
+    "*.{md,yaml,json,js}": [
+      "prettier --check"
+    ]
+  },
+  "scripts": {
+    "lint:check": "npm run lint:check:prettier",
+    "lint:check:prettier": "prettier --check .",
+    "lint:fix": "npm run lint:fix:prettier",
+    "lint:fix:prettier": "prettier --write .",
+    "prepare": "husky"
+  }
+}
