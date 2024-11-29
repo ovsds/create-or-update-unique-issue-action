@@ -2,26 +2,82 @@ name: "Create Or Update Unique Issue"
 description: "Create or Update Unique Issue Action"
 
 inputs:
-  placeholder:
-    description: "Placeholder input to be replaced by real inputs"
+  token:
+    description: "GITHUB_TOKEN or a repo scoped PAT"
+    default: ${{ github.token }}
+  title:
+    description: "The title of the issue to create or update"
     required: true
-    default: "placeholder"
+  body:
+    description: "The body of the issue to create or update"
+    required: true
+  unique-title-includes:
+    description: "The unique title to search for in the repository"
+    required: true
+  state:
+    description: "State of the issue: open or closed. Issue is not created if closed"
+    default: "open"
 
 outputs:
-  placeholder:
-    description: "Placeholder output to be replaced by real outputs"
-    value: ${{steps.placeholder.outputs.placeholder }}
+  issue-number:
+    description: "The ID of the issue created or updated"
+    value: ${{ steps.result.outputs.issue-number }}
 
 runs:
   using: "composite"
   steps:
-    - name: Placeholder
-      id: placeholder
-      shell: bash
-      run: |
-        echo "::set-output name=placeholder::${{ inputs.placeholder }}"
+    - name: Find issue
+      id: find-issue
+      uses: actions-cool/issues-helper@v3
+      with:
+        token: ${{ inputs.token }}
+        actions: "find-issues"
+        title-includes: ${{ inputs.unique-title-includes }}
 
-# https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#branding
+    - name: Get issue number
+      shell: bash
+      id: get-issue-number
+      run: |
+        issues=$(cat <<EOF
+        ${{ steps.find-issue.outputs.issues }}
+        EOF
+        )
+        if [ "$issues" != "[]" ]; then
+          echo "issue-number=$(echo $issues | jq -r '.[0].number')" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Issue
+      if: steps.get-issue-number.outputs.issue-number == '' && inputs.state != 'closed'
+      id: create-issue
+      uses: actions-cool/issues-helper@v3
+      with:
+        token: ${{ inputs.token }}
+        actions: "create-issue"
+        title: ${{ inputs.title }}
+        body: ${{ inputs.body }}
+
+    - name: Update Issue
+      if: steps.get-issue-number.outputs.issue-number != ''
+      id: update-issue
+      uses: actions-cool/issues-helper@v3
+      with:
+        token: ${{ inputs.token }}
+        actions: "update-issue"
+        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
+        title: ${{ inputs.title }}
+        body: ${{ inputs.body }}
+        state: ${{ inputs.state }}
+
+    - name: Result
+      shell: bash
+      id: result
+      run: |
+        if [ -n "${{ steps.get-issue-number.outputs.issue-number }}" ]; then
+          echo "issue-number=${{ steps.get-issue-number.outputs.issue-number }}" >> $GITHUB_OUTPUT
+        elif [ -n "${{ steps.create-issue.outputs.issue-number }}" ]; then
+          echo "issue-number=${{ steps.create-issue.outputs.issue-number }}" >> $GITHUB_OUTPUT
+        fi
+
 branding:
-  icon: "message-square"
+  icon: "check-square"
   color: "gray-dark"
