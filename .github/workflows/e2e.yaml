@@ -208,7 +208,7 @@ jobs:
           actual: ${{ steps.find-issue-closed.outputs.issues }}
           expected: "[]"
 
-  e2e-reopen-closed:
+  e2e-closed-not-reopen:
     runs-on: ubuntu-latest
 
     permissions:
@@ -216,8 +216,8 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Reopen Closed"
-      issue-body: "This is a test issue for the E2E Reopen Closed workflow"
+      issue-title-prefix: "E2E ${{ github.run_number }} - Closed Not Reopen"
+      issue-body: "This is a test issue for the E2E Closed Not Reopen workflow"
 
     steps:
       - name: Checkout repository
@@ -261,6 +261,19 @@ jobs:
           body: "${{ env.issue-body }} - Reopen"
           unique-title-includes: ${{ env.issue-title-prefix }}
 
+      - name: Get Issue Closed
+        id: get-issue-closed-again
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "get-issue"
+          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+
+      - name: Assert issue closed
+        uses: nick-fields/assert-action@v2
+        with:
+          actual: ${{ steps.get-issue-closed-again.outputs.issue-state }}
+          expected: "closed"
+
       - name: Get Issue Reopened
         id: get-issue-reopened
         uses: actions-cool/issues-helper@v3
@@ -285,7 +298,7 @@ jobs:
     needs:
       - e2e-default
       - e2e-close-non-existing
-      - e2e-reopen-closed
+      - e2e-closed-not-reopen
 
     steps:
       - name: Close e2e issues
