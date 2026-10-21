@@ -52,17 +52,12 @@ jobs:
           unique-title-includes: ${{ env.issue-title-prefix }}
 
       - name: Wait for Issue Listed
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
           LISTED: "true"
-        with:
-          command: .github/scripts/e2e/wait_issue_listed.sh
-          shell: bash
-          max_attempts: 6
-          retry_wait_seconds: 5
-          timeout_seconds: 30
+        run: .github/scripts/e2e/wait_issue_listed.sh
 
       - name: Get Issue Created
         id: get-issue-created
@@ -245,17 +240,12 @@ jobs:
           unique-title-includes: ${{ env.issue-title-prefix }}
 
       - name: Wait for Issue Listed
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
           LISTED: "true"
-        with:
-          command: .github/scripts/e2e/wait_issue_listed.sh
-          shell: bash
-          max_attempts: 6
-          retry_wait_seconds: 5
-          timeout_seconds: 30
+        run: .github/scripts/e2e/wait_issue_listed.sh
 
       - name: Test Run Close Issue
         id: test-run-close-issue
@@ -281,17 +271,12 @@ jobs:
           expected: "closed"
 
       - name: Wait for Issue Not Listed
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
           LISTED: "false"
-        with:
-          command: .github/scripts/e2e/wait_issue_listed.sh
-          shell: bash
-          max_attempts: 6
-          retry_wait_seconds: 5
-          timeout_seconds: 30
+        run: .github/scripts/e2e/wait_issue_listed.sh
 
       - name: Test Run Reopen Issue
         id: test-run-reopen-issue
