@@ -340,12 +340,11 @@ jobs:
           actual: ${{ steps.get-issue-reopened.outputs.issue-state }}
           expected: "open"
 
-  e2e:
+  e2e-cleanup:
     runs-on: ubuntu-latest
-    if: always() && !cancelled()
+    if: always()
 
     permissions:
-      contents: read
       issues: write
 
     needs:
@@ -369,6 +368,18 @@ jobs:
             gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${issue_number}" -f state=closed --silent
           done
 
+  e2e:
+    runs-on: ubuntu-latest
+    if: always() && !cancelled()
+
+    permissions: {}
+
+    needs:
+      - e2e-default
+      - e2e-close-non-existing
+      - e2e-closed-not-reopen
+
+    steps:
       - name: Collect Results
         uses: ovsds/collect-needs-result-action@12190e2a1bfe85d9c024f190a3833973e97998f8 # v1.0.0
         with:
