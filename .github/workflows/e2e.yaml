@@ -35,14 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE_INCLUDES: ${{ env.issue-title-prefix }}
-        run: |
-          set -euo pipefail
-          issues="$(
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
-              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
-              | jq --slurp --compact-output '.'
-          )"
-          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -59,9 +52,17 @@ jobs:
           unique-title-includes: ${{ env.issue-title-prefix }}
 
       - name: Wait for Issue Listed
-        uses: $/.github/actions/wait_issue_listed
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          LISTED: "true"
         with:
-          issue-number: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          command: .github/scripts/e2e/wait_issue_listed.sh
+          shell: bash
+          max_attempts: 6
+          retry_wait_seconds: 5
+          timeout_seconds: 30
 
       - name: Get Issue Created
         id: get-issue-created
@@ -69,10 +70,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -106,10 +104,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-update-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -144,10 +139,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -167,21 +159,10 @@ jobs:
           actual: ${{ steps.get-issue-closed.outputs.issue-state }}
           expected: "closed"
 
-      - name: Get Issue Close Reason
-        id: get-issue-close-reason
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          result="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.state_reason')"
-          echo "result=${result}" >> "${GITHUB_OUTPUT}"
-
       - name: Assert issue close reason
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
-          actual: ${{ steps.get-issue-close-reason.outputs.result }}
+          actual: ${{ steps.get-issue-closed.outputs.issue-state-reason }}
           expected: "not_planned"
 
   e2e-close-non-existing:
@@ -207,14 +188,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE_INCLUDES: ${{ env.issue-title-prefix }}
-        run: |
-          set -euo pipefail
-          issues="$(
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
-              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
-              | jq --slurp --compact-output '.'
-          )"
-          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -237,14 +211,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE_INCLUDES: ${{ env.issue-title-prefix }}
-        run: |
-          set -euo pipefail
-          issues="$(
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
-              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
-              | jq --slurp --compact-output '.'
-          )"
-          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -278,9 +245,17 @@ jobs:
           unique-title-includes: ${{ env.issue-title-prefix }}
 
       - name: Wait for Issue Listed
-        uses: $/.github/actions/wait_issue_listed
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          LISTED: "true"
         with:
-          issue-number: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          command: .github/scripts/e2e/wait_issue_listed.sh
+          shell: bash
+          max_attempts: 6
+          retry_wait_seconds: 5
+          timeout_seconds: 30
 
       - name: Test Run Close Issue
         id: test-run-close-issue
@@ -297,10 +272,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue closed
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -309,10 +281,17 @@ jobs:
           expected: "closed"
 
       - name: Wait for Issue Not Listed
-        uses: $/.github/actions/wait_issue_listed
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+          LISTED: "false"
         with:
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
-          listed: "false"
+          command: .github/scripts/e2e/wait_issue_listed.sh
+          shell: bash
+          max_attempts: 6
+          retry_wait_seconds: 5
+          timeout_seconds: 30
 
       - name: Test Run Reopen Issue
         id: test-run-reopen-issue
@@ -328,10 +307,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue closed
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -345,10 +321,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
-            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue reopened
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -361,6 +334,7 @@ jobs:
     if: always()
 
     permissions:
+      contents: read
       issues: write
 
     needs:
@@ -369,23 +343,17 @@ jobs:
       - e2e-closed-not-reopen
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Close e2e issues
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE_PREFIX: "E2E ${{ github.run_number }}."
-        run: |
-          set -euo pipefail
-          issue_numbers="$(
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
-              --jq '.[] | select(.pull_request == null and (.title | startswith($ENV.TITLE_PREFIX))) | .number'
-          )"
-          failed=0
-          for issue_number in ${issue_numbers}; do
-            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${issue_number}" -f state=closed --silent ||
-              failed=1
-          done
-          exit "${failed}"
+        run: .github/scripts/e2e/close_issues.sh
 
   e2e:
     runs-on: ubuntu-latest
