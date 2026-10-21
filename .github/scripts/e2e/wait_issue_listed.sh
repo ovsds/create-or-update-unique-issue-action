@@ -2,29 +2,8 @@
 
 set -euo pipefail
 
-function print_info() {
-    local MESSAGE=$1
-    echo "INFO: ${MESSAGE}"
-}
-
-function print_error() {
-    local MESSAGE=$1
-    echo "ERROR:: ${MESSAGE}"
-}
-
-function set_output() {
-    GITHUB_OUTPUT=${GITHUB_OUTPUT:?"GITHUB_OUTPUT is not set"}
-
-    local KEY=$1
-    local VALUE=$2
-
-    print_info "Setting output: ${KEY}=${VALUE}"
-    {
-        echo "${KEY}<<EOF"
-        echo "${VALUE}"
-        echo "EOF"
-    } >> "${GITHUB_OUTPUT}"
-}
+# shellcheck source-path=SCRIPTDIR source=common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 function main() {
     GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?"GITHUB_REPOSITORY is not set"}
@@ -41,10 +20,7 @@ function main() {
     local ACTUAL_LISTED
     while [ "${SECONDS}" -lt "${DEADLINE}" ]; do
         # shellcheck disable=SC2016 # $ENV is expanded by jq, not by the shell
-        if LISTED_NUMBERS="$(
-            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
-                --jq '.[] | select(.number == ($ENV.ISSUE_NUMBER | tonumber)) | .number'
-        )"; then
+        if LISTED_NUMBERS="$(list_issue_numbers open '.number == ($ENV.ISSUE_NUMBER | tonumber)')"; then
             ACTUAL_LISTED="false"
             if [ -n "${LISTED_NUMBERS}" ]; then ACTUAL_LISTED="true"; fi
             if [ "${ACTUAL_LISTED}" = "${LISTED}" ]; then
