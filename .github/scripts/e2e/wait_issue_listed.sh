@@ -58,6 +58,7 @@ function main() {
                 MATCHES=0
             fi
         else
+            print_info "Reading the open issue list failed, retrying"
             MATCHES=0
         fi
         sleep 2

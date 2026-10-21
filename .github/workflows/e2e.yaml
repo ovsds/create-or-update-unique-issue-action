@@ -53,6 +53,7 @@ jobs:
 
       - name: Wait for Issue Listed
         shell: bash
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
@@ -241,6 +242,7 @@ jobs:
 
       - name: Wait for Issue Listed
         shell: bash
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
@@ -272,6 +274,7 @@ jobs:
 
       - name: Wait for Issue Not Listed
         shell: bash
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
