@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Functions shared by the e2e scripts, sourced by each of them.
+# Functions shared by main.sh and the e2e scripts, sourced by each of them.
 
 function print_info() {
     local MESSAGE=$1
