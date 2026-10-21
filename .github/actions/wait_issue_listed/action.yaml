@@ -1,0 +1,52 @@
+name: "Wait for Issue Listed"
+description: "Wait until the open issue list shows, or no longer shows, an issue; the list lags behind issue changes"
+
+inputs:
+  issue-number:
+    description: "Number of the issue to wait for"
+    required: true
+  listed:
+    description: "Whether to wait for the issue to be listed (true) or not listed (false)"
+    required: false
+    default: "true"
+  token:
+    description: "GitHub token"
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Wait for Issue Listed
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ISSUE_NUMBER: ${{ inputs.issue-number }}
+        LISTED: ${{ inputs.listed }}
+      run: |
+        set -euo pipefail
+        if [ -z "${ISSUE_NUMBER}" ]; then
+          echo "::error::Issue number is empty"
+          exit 1
+        fi
+        # One read can hit an up-to-date replica while the next one does not, so require several in a row
+        required_matches=3
+        matches=0
+        deadline=$((SECONDS + 60))
+        while [ "${SECONDS}" -lt "${deadline}" ]; do
+          if issue_numbers="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" --jq '.[].number'
+          )"; then
+            listed=false
+            if grep -qx "${ISSUE_NUMBER}" <<<"${issue_numbers}"; then listed=true; fi
+            if [ "${listed}" = "${LISTED}" ]; then
+              matches=$((matches + 1))
+              if [ "${matches}" -ge "${required_matches}" ]; then exit 0; fi
+            else
+              matches=0
+            fi
+          fi
+          sleep 2
+        done
+        echo "::error::Issue ${ISSUE_NUMBER} listed=${LISTED} not reached in 60 seconds"
+        exit 1
