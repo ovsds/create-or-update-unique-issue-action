@@ -60,6 +60,8 @@ function main() {
     INPUT_BODY=${INPUT_BODY?"INPUT_BODY is not set"}
     INPUT_UNIQUE_TITLE_INCLUDES=${INPUT_UNIQUE_TITLE_INCLUDES?"INPUT_UNIQUE_TITLE_INCLUDES is not set"}
     INPUT_CLOSE=${INPUT_CLOSE?"INPUT_CLOSE is not set"}
+    # Expressions compared `close` to 'true' ignoring case
+    INPUT_CLOSE="$(tr '[:upper:]' '[:lower:]' <<<"${INPUT_CLOSE}")"
 
     local ISSUE_NUMBER
     ISSUE_NUMBER="$(find_issue)"

@@ -47,7 +47,7 @@ function main() {
         if [ -n "${LISTED_NUMBERS}" ]; then ACTUAL_LISTED="true"; fi
 
         if [ "${ACTUAL_LISTED}" != "${LISTED}" ]; then
-            print_error "Issue #${ISSUE_NUMBER} listed is not ${LISTED} on read ${MATCH}"
+            print_info "Issue #${ISSUE_NUMBER} listed is not ${LISTED} on read ${MATCH}"
             exit 1
         fi
         if [ "${MATCH}" -lt "${REQUIRED_MATCHES}" ]; then sleep 2; fi

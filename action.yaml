@@ -37,7 +37,7 @@ runs:
         INPUT_CLOSE: ${{ inputs.close }}
       run: |
         # Create Or Update Unique Issue
-        ${{ github.action_path }}/src/main.sh
+        "${GITHUB_ACTION_PATH}/src/main.sh"
 
 branding:
   icon: "check-square"
