@@ -3,7 +3,7 @@
 [![CI](https://github.com/ovsds/create-or-update-unique-issue-action/workflows/Check%20PR/badge.svg)](https://github.com/ovsds/create-or-update-unique-issue-action/actions?query=workflow%3A%22%22Check+PR%22%22)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Create%20Or%20Update%20Unique%20Issue-blue.svg)](https://github.com/marketplace/actions/create-or-update-unique-issue)
 
-This is composite action based on [GitHub CLI](https://cli.github.com/). The sole role of the action is to create issue or update it if one already exists.
+This is composite action based on [GitHub CLI](https://cli.github.com/). The sole role of the action is to create issue or update it if one already exists. The runner needs `gh`, which GitHub-hosted runners have.
 
 ## Usage
 
