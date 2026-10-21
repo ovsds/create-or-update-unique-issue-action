@@ -7,6 +7,10 @@ on:
       - reopened
       - synchronize
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
 jobs:
   e2e-default:
     runs-on: ubuntu-latest
@@ -16,63 +20,75 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Default"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Default"
       issue-body: "This is a test issue for the E2E Default workflow"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Find Issue Before
         id: find-issue-before
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.find-issue-before.outputs.issues }}
           expected: "[]"
 
       - name: Test Run Create Issue
         id: test-run-create-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Create"
           body: "${{ env.issue-body }} - Create"
           unique-title-includes: ${{ env.issue-title-prefix }}
 
+      - name: Wait for Issue Listed
+        shell: bash
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          LISTED: "true"
+        run: .github/scripts/e2e/wait_issue_listed.sh
+
       - name: Get Issue Created
         id: get-issue-created
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-create-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-created.outputs.issue-title }}
           expected: "${{ env.issue-title-prefix }} - Create"
 
       - name: Assert issue body
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-created.outputs.issue-body }}
           expected: "${{ env.issue-body }} - Create"
 
       - name: Assert issue state
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-created.outputs.issue-state }}
           expected: "open"
 
       - name: Test Run Update Issue
         id: test-run-update-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Update"
           body: "${{ env.issue-body }} - Update"
@@ -80,32 +96,33 @@ jobs:
 
       - name: Get Issue Updated
         id: get-issue-updated
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-update-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-update-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-updated.outputs.issue-title }}
           expected: "${{ env.issue-title-prefix }} - Update"
 
       - name: Assert issue body
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-updated.outputs.issue-body }}
           expected: "${{ env.issue-body }} - Update"
 
       - name: Assert issue state
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-updated.outputs.issue-state }}
           expected: "open"
 
       - name: Test Run Close Issue
         id: test-run-close-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
@@ -114,46 +131,34 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue title
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-closed.outputs.issue-title }}
           expected: "${{ env.issue-title-prefix }} - Close"
 
       - name: Assert issue body
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-closed.outputs.issue-body }}
           expected: "${{ env.issue-body }} - Close"
 
       - name: Assert issue state
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-closed.outputs.issue-state }}
           expected: "closed"
 
-      - name: Get Issue Close Reason
-        id: get-issue-close-reason
-        shell: bash
-        run: |
-          result=$( \
-            gh api \
-            /repos/${{ github.repository }}/issues/${{ steps.test-run-close-issue.outputs.issue-number }} \
-            | jq -r '.state_reason' \
-          )
-          echo "result=$result" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - name: Assert issue close reason
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
-          actual: ${{ steps.get-issue-close-reason.outputs.result }}
+          actual: ${{ steps.get-issue-closed.outputs.issue-state-reason }}
           expected: "not_planned"
 
   e2e-close-non-existing:
@@ -164,30 +169,32 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Close Non Existing"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Close Non Existing"
       issue-body: "This is a test issue for the E2E Close Non Existing workflow"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Find Issue Before
         id: find-issue-before
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.find-issue-before.outputs.issues }}
           expected: "[]"
 
       - name: Test Run Close Issue
         id: test-run-close-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
@@ -196,14 +203,14 @@ jobs:
 
       - name: Find Issue Closed
         id: find-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: .github/scripts/e2e/find_issues.sh
 
       - name: Assert issue not found
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.find-issue-closed.outputs.issues }}
           expected: "[]"
@@ -216,24 +223,35 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Closed Not Reopen"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Closed Not Reopen"
       issue-body: "This is a test issue for the E2E Closed Not Reopen workflow"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Test Run Create Issue
         id: test-run-create-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Create"
           body: "${{ env.issue-body }} - Create"
           unique-title-includes: ${{ env.issue-title-prefix }}
 
+      - name: Wait for Issue Listed
+        shell: bash
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+          LISTED: "true"
+        run: .github/scripts/e2e/wait_issue_listed.sh
+
       - name: Test Run Close Issue
         id: test-run-close-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Close"
           body: "${{ env.issue-body }} - Close"
@@ -242,20 +260,30 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue closed
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-closed.outputs.issue-state }}
           expected: "closed"
 
+      - name: Wait for Issue Not Listed
+        shell: bash
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+          LISTED: "false"
+        run: .github/scripts/e2e/wait_issue_listed.sh
+
       - name: Test Run Reopen Issue
         id: test-run-reopen-issue
-        uses: ./
+        uses: $/
         with:
           title: "${{ env.issue-title-prefix }} - Reopen"
           body: "${{ env.issue-body }} - Reopen"
@@ -263,33 +291,35 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed-again
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue closed
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-closed-again.outputs.issue-state }}
           expected: "closed"
 
       - name: Get Issue Reopened
         id: get-issue-reopened
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
+        run: .github/scripts/e2e/get_issue.sh
 
       - name: Assert issue reopened
-        uses: nick-fields/assert-action@v2
+        uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
         with:
           actual: ${{ steps.get-issue-reopened.outputs.issue-state }}
           expected: "open"
 
-  e2e:
+  e2e-cleanup:
     runs-on: ubuntu-latest
-    if: always() && !cancelled()
+    if: always()
 
     permissions:
       contents: read
@@ -301,14 +331,33 @@ jobs:
       - e2e-closed-not-reopen
 
     steps:
-      - name: Close e2e issues
-        uses: actions-cool/issues-helper@v3
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          actions: "close-issues"
-          title-includes: "E2E ${{ github.run_number }}"
+          persist-credentials: false
 
+      - name: Close e2e issues
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_PREFIX: "E2E ${{ github.run_number }}."
+        run: .github/scripts/e2e/close_issues.sh
+
+  e2e:
+    runs-on: ubuntu-latest
+    if: always() && !cancelled()
+
+    permissions: {}
+
+    needs:
+      - e2e-default
+      - e2e-close-non-existing
+      - e2e-closed-not-reopen
+      - e2e-cleanup
+
+    steps:
       - name: Collect Results
-        uses: ovsds/collect-needs-result-action@v1
+        uses: ovsds/collect-needs-result-action@12190e2a1bfe85d9c024f190a3833973e97998f8 # v1.0.0
         with:
           needs_json: ${{ toJson(needs) }}
           skip_allowed: false
