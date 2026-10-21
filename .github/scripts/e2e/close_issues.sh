@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# shellcheck source-path=SCRIPTDIR source=../../../src/common.sh
-source "$(dirname "${BASH_SOURCE[0]}")/../../../src/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../../../src/main.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../../src/main.sh"
 
 function main() {
     GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?"GITHUB_REPOSITORY is not set"}
@@ -16,7 +16,7 @@ function main() {
     local FAILED=0
     local ISSUE_NUMBER
     for ISSUE_NUMBER in ${ISSUE_NUMBERS}; do
-        if gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" -f state=closed --silent; then
+        if close_issue "${ISSUE_NUMBER}"; then
             print_info "Closed issue #${ISSUE_NUMBER}"
         else
             print_error "Failed to close issue #${ISSUE_NUMBER}"

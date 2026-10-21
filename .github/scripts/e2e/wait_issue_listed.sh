@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# shellcheck source-path=SCRIPTDIR source=../../../src/common.sh
-source "$(dirname "${BASH_SOURCE[0]}")/../../../src/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../../../src/main.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../../../src/main.sh"
 
 function main() {
     GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?"GITHUB_REPOSITORY is not set"}
