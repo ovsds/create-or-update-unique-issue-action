@@ -20,7 +20,7 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Default"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Default"
       issue-body: "This is a test issue for the E2E Default workflow"
 
     steps:
@@ -187,7 +187,7 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Close Non Existing"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Close Non Existing"
       issue-body: "This is a test issue for the E2E Close Non Existing workflow"
 
     steps:
@@ -255,7 +255,7 @@ jobs:
       issues: write
 
     env:
-      issue-title-prefix: "E2E ${{ github.run_number }} - Closed Not Reopen"
+      issue-title-prefix: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - Closed Not Reopen"
       issue-body: "This is a test issue for the E2E Closed Not Reopen workflow"
 
     steps:
@@ -357,7 +357,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TITLE_INCLUDES: "E2E ${{ github.run_number }}"
+          TITLE_INCLUDES: "E2E ${{ github.run_number }}.${{ github.run_attempt }} - "
         run: |
           set -euo pipefail
           issue_numbers="$(
