@@ -28,64 +28,74 @@ runs:
   steps:
     - name: Find issue
       id: find-issue
-      uses: actions-cool/issues-helper@v3
-      with:
-        token: ${{ inputs.token }}
-        actions: "find-issues"
-        title-includes: ${{ inputs.unique-title-includes }}
-
-    - name: Get issue number
       shell: bash
-      id: get-issue-number
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        UNIQUE_TITLE_INCLUDES: ${{ inputs.unique-title-includes }}
       run: |
-        issues=$(cat <<EOF
-        ${{ steps.find-issue.outputs.issues }}
-        EOF
-        )
-        if [ "$issues" != "[]" ]; then
-          echo "issue-number=$(echo $issues | jq -r '.[0].number')" >> $GITHUB_OUTPUT
-        fi
+        set -euo pipefail
+        issue_numbers="$(
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+            --jq '.[] | select(.pull_request == null and (.title | contains($ENV.UNIQUE_TITLE_INCLUDES))) | .number'
+        )"
+        echo "issue-number=$(printf '%s\n' "${issue_numbers}" | sed -n '1p')" >> "${GITHUB_OUTPUT}"
 
     - name: Create Issue
-      if: steps.get-issue-number.outputs.issue-number == '' && inputs.close != 'true'
+      if: steps.find-issue.outputs.issue-number == '' && inputs.close != 'true'
       id: create-issue
-      uses: actions-cool/issues-helper@v3
-      with:
-        token: ${{ inputs.token }}
-        actions: "create-issue"
-        title: ${{ inputs.title }}
-        body: ${{ inputs.body }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+      run: |
+        set -euo pipefail
+        if [ -z "${TITLE}" ]; then
+          echo "::warning::Issue title is empty, skipping issue creation"
+          exit 0
+        fi
+        issue_number="$(
+          gh api "repos/${GITHUB_REPOSITORY}/issues" -f "title=${TITLE}" -f "body=${BODY}" --jq '.number'
+        )"
+        echo "issue-number=${issue_number}" >> "${GITHUB_OUTPUT}"
 
     - name: Update Issue
-      if: steps.get-issue-number.outputs.issue-number != ''
+      if: steps.find-issue.outputs.issue-number != ''
       id: update-issue
-      uses: actions-cool/issues-helper@v3
-      with:
-        token: ${{ inputs.token }}
-        actions: "update-issue"
-        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
-        title: ${{ inputs.title }}
-        body: ${{ inputs.body }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+      run: |
+        set -euo pipefail
+        args=(--method PATCH --silent)
+        if [ -n "${TITLE}" ]; then args+=(-f "title=${TITLE}"); fi
+        if [ -n "${BODY}" ]; then args+=(-f "body=${BODY}"); fi
+        gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" "${args[@]}"
 
     - name: Close Issue
-      if: steps.get-issue-number.outputs.issue-number != '' && inputs.close == 'true'
+      if: steps.find-issue.outputs.issue-number != '' && inputs.close == 'true'
       id: close-issue
-      uses: actions-cool/issues-helper@v3
-      with:
-        token: ${{ inputs.token }}
-        actions: "close-issue"
-        issue-number: ${{ steps.get-issue-number.outputs.issue-number }}
-        close-reason: "not_planned"
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+      run: |
+        set -euo pipefail
+        gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+          -f state=closed -f state_reason=not_planned --silent
 
     - name: Result
       shell: bash
       id: result
+      env:
+        FOUND_ISSUE_NUMBER: ${{ steps.find-issue.outputs.issue-number }}
+        CREATED_ISSUE_NUMBER: ${{ steps.create-issue.outputs.issue-number }}
       run: |
-        if [ -n "${{ steps.get-issue-number.outputs.issue-number }}" ]; then
-          echo "issue-number=${{ steps.get-issue-number.outputs.issue-number }}" >> $GITHUB_OUTPUT
-        elif [ -n "${{ steps.create-issue.outputs.issue-number }}" ]; then
-          echo "issue-number=${{ steps.create-issue.outputs.issue-number }}" >> $GITHUB_OUTPUT
-        fi
+        set -euo pipefail
+        echo "issue-number=${FOUND_ISSUE_NUMBER:-${CREATED_ISSUE_NUMBER}}" >> "${GITHUB_OUTPUT}"
 
 branding:
   icon: "check-square"

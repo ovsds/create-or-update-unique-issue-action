@@ -31,11 +31,18 @@ jobs:
 
       - name: Find Issue Before
         id: find-issue-before
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: |
+          set -euo pipefail
+          issues="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
+              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
+              | jq --slurp --compact-output '.'
+          )"
+          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -53,10 +60,14 @@ jobs:
 
       - name: Get Issue Created
         id: get-issue-created
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-create-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-create-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -86,10 +97,14 @@ jobs:
 
       - name: Get Issue Updated
         id: get-issue-updated
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-update-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-update-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -120,10 +135,14 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue title
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -146,15 +165,13 @@ jobs:
       - name: Get Issue Close Reason
         id: get-issue-close-reason
         shell: bash
-        run: |
-          result=$( \
-            gh api \
-            /repos/${{ github.repository }}/issues/${{ steps.test-run-close-issue.outputs.issue-number }} \
-            | jq -r '.state_reason' \
-          )
-          echo "result=$result" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          result="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.state_reason')"
+          echo "result=${result}" >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue close reason
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -181,11 +198,18 @@ jobs:
 
       - name: Find Issue Before
         id: find-issue-before
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: |
+          set -euo pipefail
+          issues="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
+              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
+              | jq --slurp --compact-output '.'
+          )"
+          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -204,11 +228,18 @@ jobs:
 
       - name: Find Issue Closed
         id: find-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "find-issues"
-          title-includes: ${{ env.issue-title-prefix }}
-          issue-state: "all"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: ${{ env.issue-title-prefix }}
+        run: |
+          set -euo pipefail
+          issues="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
+              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number' \
+              | jq --slurp --compact-output '.'
+          )"
+          echo "issues=${issues}" >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue not found
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -252,10 +283,14 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue closed
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -273,10 +308,14 @@ jobs:
 
       - name: Get Issue Closed
         id: get-issue-closed-again
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-close-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue closed
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -286,10 +325,14 @@ jobs:
 
       - name: Get Issue Reopened
         id: get-issue-reopened
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "get-issue"
-          issue-number: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.test-run-reopen-issue.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            --jq '"issue-title=\(.title)", "issue-body=\(.body)", "issue-state=\(.state)"' >> "${GITHUB_OUTPUT}"
 
       - name: Assert issue reopened
         uses: nick-fields/assert-action@0efd6166067d9c59d89c710fab4f79fb066f8985 # v4.0.1
@@ -312,10 +355,19 @@ jobs:
 
     steps:
       - name: Close e2e issues
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: "close-issues"
-          title-includes: "E2E ${{ github.run_number }}"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE_INCLUDES: "E2E ${{ github.run_number }}"
+        run: |
+          set -euo pipefail
+          issue_numbers="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=open&per_page=100" \
+              --jq '.[] | select(.pull_request == null and (.title | contains($ENV.TITLE_INCLUDES))) | .number'
+          )"
+          for issue_number in ${issue_numbers}; do
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${issue_number}" -f state=closed --silent
+          done
 
       - name: Collect Results
         uses: ovsds/collect-needs-result-action@12190e2a1bfe85d9c024f190a3833973e97998f8 # v1.0.0
